@@ -51,3 +51,90 @@ def parse_json(data):
 ######################################################################
 # INSERT CODE HERE
 ######################################################################
+
+# Health Endpoint
+@app.route("/health" , methods=["GET"])
+def healthcheck():
+    return jsonify(dict(status="OK")), 200
+
+# Count endpoint - 
+@app.route("/count" , methods=["GET"])
+def countcheck():
+    """Return length of data attached to url"""
+    count = db.songs.count_documents({})
+
+    return {"count": count}, 200
+
+# Song endpoint
+@app.route("/song", methods=["GET"])
+def songs():
+    """Search for songs by name"""
+    songResults = list(db.songs.find({}))
+    print(songResults[0])
+
+    return {"songs": parse_json(songResults)}, 200
+## I felt this was grotesquely verbose, and not very human readable. Look into cleaning up parsed data return into something more 
+## reader friendly
+
+# Song ID
+@app.route("/song/<int:id>", methods=["GET"])
+def get_song_by_id(id):
+    """Find song by ID value"""
+    songID = db.songs.find_one({"id": id})
+    if not songID:
+        return {"message": f"song with id {id} not found"}, 404
+
+    return parse_json(songID), 200
+    
+# Insert Song from Request Body
+
+@app.route("/song", methods=["POST"])
+def create_song():
+    """Extract the song from the POST request"""
+    song_in = request.json
+
+    print(song_in["id"])
+
+    """if a song with that id already exists, return 303 with URL for the resource"""
+    song = db.songs.find_one({"id": song_in["id"]})
+
+    if song:
+        return {"Message": f"song with id {song_in['id']} already present"}, 302
+
+    insert_id: InsertOneResult = db.songs.insert_one(song_in)
+
+    return {"insert id": parse_json(insert_id.inserted_id)}, 201
+
+# Update song by ID
+@app.route("/song/<int:id>", methods=["PUT"])
+def update_song(id):
+
+    # get data from the json body
+    song_in = request.json
+
+    song = db.songs.find_one({"id": id})
+
+    if song == None:
+        return {"Message": "Song not found"}, 404
+
+    updated_song = {"$set": song_in}
+
+    result = db.songs.update_one({"id": id}, updated_song)
+
+    if result.modified_count == 0:
+        return {"Message": "Song found, but nothing updated"}, 200
+
+    else:
+        return parse_json(db.songs.find_one({"id": id})), 201
+
+## Delete function
+
+@app.route("/song/<int:id>" , methods=["DELETE"])
+def delete_song(id):
+    
+    #Extract target ID from URL
+    result = db.songs.delete_one({"id": id})
+    if result.deleted_count == 0:
+        return {"Message": "Song not found"}, 404
+    else:
+        return "", 204
