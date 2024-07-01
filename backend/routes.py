@@ -54,12 +54,12 @@ def parse_json(data):
 
 # Health Endpoint
 @app.route("/health" , methods=["GET"])
-def healthcheck():
+def health():
     return jsonify(dict(status="OK")), 200
 
 # Count endpoint - 
 @app.route("/count" , methods=["GET"])
-def countcheck():
+def count():
     """Return length of data attached to url"""
     count = db.songs.count_documents({})
 
@@ -69,22 +69,19 @@ def countcheck():
 @app.route("/song", methods=["GET"])
 def songs():
     """Search for songs by name"""
-    songResults = list(db.songs.find({}))
-    print(songResults[0])
-
+    Results = list(db.songs.find({}))
+    print(Results[0])
     return {"songs": parse_json(songResults)}, 200
-## I felt this was grotesquely verbose, and not very human readable. Look into cleaning up parsed data return into something more 
-## reader friendly
 
 # Song ID
 @app.route("/song/<int:id>", methods=["GET"])
 def get_song_by_id(id):
     """Find song by ID value"""
-    songID = db.songs.find_one({"id": id})
-    if not songID:
+    song = db.songs.find_one({"id": id})
+    if not song:
         return {"message": f"song with id {id} not found"}, 404
 
-    return parse_json(songID), 200
+    return parse_json(song), 200
     
 # Insert Song from Request Body
 
