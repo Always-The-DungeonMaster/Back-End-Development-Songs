@@ -87,21 +87,22 @@ def get_song_by_id(id):
 
 @app.route("/song", methods=["POST"])
 def create_song():
-    """Extract the song from the POST request"""
+    # get data from the json body
     song_in = request.json
 
     print(song_in["id"])
 
-    """if a song with that id already exists, return 303 with URL for the resource"""
+    # if the id is already there, return 303 with the URL for the resource
     song = db.songs.find_one({"id": song_in["id"]})
-
     if song:
-        return {"Message": f"song with id {song_in['id']} already present"}, 302
+        return {
+            "Message": f"song with id {song_in['id']} already present"
+        }, 302
 
     insert_id: InsertOneResult = db.songs.insert_one(song_in)
 
-    return {"insert id": parse_json(insert_id.inserted_id)}, 201
-
+    return {"inserted id": parse_json(insert_id.inserted_id)}, 201
+    
 # Update song by ID
 @app.route("/song/<int:id>", methods=["PUT"])
 def update_song(id):
@@ -112,15 +113,14 @@ def update_song(id):
     song = db.songs.find_one({"id": id})
 
     if song == None:
-        return {"Message": "Song not found"}, 404
+        return {"message": "song not found"}, 404
 
-    updated_song = {"$set": song_in}
+    updated_data = {"$set": song_in}
 
-    result = db.songs.update_one({"id": id}, updated_song)
+    result = db.songs.update_one({"id": id}, updated_data)
 
     if result.modified_count == 0:
-        return {"Message": "Song found, but nothing updated"}, 200
-
+        return {"message": "song found, but nothing updated"}, 200
     else:
         return parse_json(db.songs.find_one({"id": id})), 201
 
